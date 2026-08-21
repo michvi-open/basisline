@@ -1,0 +1,9 @@
+{
+  "name": "basisline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open specification for preserving the evidence, assumptions, and outcomes behind important business decisions.",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {}
+}
