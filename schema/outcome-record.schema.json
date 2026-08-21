@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://basisline.org/schema/v0.1/outcome-record.schema.json",
+  "title": "Basisline Outcome Record",
+  "description": "v0.1 — links a later-known outcome to a Decision Receipt without altering the original record. See spec/v0.1.md section 4.2.",
+  "type": "object",
+  "properties": {
+    "basisline_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "outcome"
+    },
+    "outcome_id": {
+      "type": "string",
+      "pattern": "^bo_[0-9]{4}-[0-9]{2}-[0-9]{2}_[a-z0-9]+$"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^bl_[0-9]{4}-[0-9]{2}-[0-9]{2}_[a-z0-9]+$"
+    },
+    "recorded_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "actual_result": {
+      "type": "string",
+      "minLength": 1
+    },
+    "learning": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "basisline_version",
+    "record_type",
+    "outcome_id",
+    "receipt_id",
+    "recorded_on",
+    "actual_result",
+    "learning"
+  ],
+  "additionalProperties": false
+}
