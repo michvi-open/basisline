@@ -12,6 +12,18 @@ No account. No proprietary database. No vendor lock-in.
 
 📄 **[Read the full v0.1 specification →](spec/v0.1.md)**
 
+## Try it
+
+```bash
+cd reference-app
+python3 -m http.server 8000
+```
+
+Then open **http://localhost:8000**. (Any static file server works — this
+just needs to not be opened via `file://`, since the app fetches
+`schema/*.json` at runtime. See [reference-app/README.md](reference-app/README.md)
+for why.)
+
 ## Repository Structure
 
 ```
