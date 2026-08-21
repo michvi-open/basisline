@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basisline — Reference App (v0.1)</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <h1>Basisline <span class="version">v0.1 reference app</span></h1>
+  <p class="tagline">Preserve the basis of the decision. Runs entirely in your browser — nothing leaves this page.</p>
+  <nav>
+    <button class="tab-btn active" data-tab="receipt">Create Decision Receipt</button>
+    <button class="tab-btn" data-tab="outcome">Create Outcome Record</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- SCREEN 1: Decision Receipt -->
+  <section id="tab-receipt" class="tab-panel active">
+    <form id="receipt-form">
+      <div class="field">
+        <label for="r-receipt_id">Receipt ID</label>
+        <input id="r-receipt_id" placeholder="bl_2026-08-21_a1b2" required />
+        <p class="hint">Format: bl_YYYY-MM-DD_xxxx</p>
+      </div>
+
+      <div class="field">
+        <label for="r-summary">Decision summary</label>
+        <input id="r-summary" placeholder="Increase Google Ads budget by ₹5 lakh" required />
+      </div>
+
+      <div class="field">
+        <label for="r-context">Context</label>
+        <input id="r-context" placeholder="Marketing budget allocation for Q3 2026" required />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="r-owner">Owner</label>
+          <input id="r-owner" placeholder="Marketing Head" required />
+        </div>
+        <div class="field">
+          <label for="r-date">Date</label>
+          <input id="r-date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="r-confidence">Confidence</label>
+          <select id="r-confidence" required>
+            <option value="">Select…</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Evidence</label>
+        <div id="evidence-rows"></div>
+        <button type="button" id="add-evidence-row" class="secondary">+ Add evidence row</button>
+      </div>
+
+      <div class="field">
+        <label for="r-evidence_as_of">Evidence as of</label>
+        <input id="r-evidence_as_of" type="datetime-local" required />
+      </div>
+
+      <div class="field">
+        <label for="r-assumptions">Assumptions <span class="hint-inline">(one per line)</span></label>
+        <textarea id="r-assumptions" rows="3" required></textarea>
+      </div>
+
+      <div class="field">
+        <label for="r-known_conflicts">Known conflicts <span class="hint-inline">(one per line, optional)</span></label>
+        <textarea id="r-known_conflicts" rows="2"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="r-review_after_days">Review after (days)</label>
+        <input id="r-review_after_days" type="number" min="1" required />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="r-supersedes">Supersedes <span class="hint-inline">(optional)</span></label>
+          <input id="r-supersedes" placeholder="bl_2026-01-01_xxxx" />
+        </div>
+        <div class="field">
+          <label for="r-related">Related receipt IDs <span class="hint-inline">(one per line, optional)</span></label>
+          <textarea id="r-related" rows="2"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary">Generate</button>
+      </div>
+    </form>
+
+    <div id="receipt-errors" class="errors" hidden></div>
+
+    <div id="receipt-output" class="output" hidden>
+      <div class="output-actions">
+        <button id="dl-receipt-json" class="secondary">Download JSON</button>
+        <button id="dl-receipt-md" class="secondary">Download Markdown</button>
+      </div>
+      <h3>JSON</h3>
+      <pre id="receipt-json-preview"></pre>
+      <h3>Markdown</h3>
+      <pre id="receipt-md-preview"></pre>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: Outcome Record -->
+  <section id="tab-outcome" class="tab-panel">
+    <form id="outcome-form">
+      <div class="field">
+        <label for="o-outcome_id">Outcome ID</label>
+        <input id="o-outcome_id" placeholder="bo_2026-09-20_c3d4" required />
+        <p class="hint">Format: bo_YYYY-MM-DD_xxxx</p>
+      </div>
+
+      <div class="field">
+        <label for="o-receipt_id">Linked Receipt ID</label>
+        <input id="o-receipt_id" placeholder="bl_2026-08-20_a91f" required />
+        <p class="hint">The Decision Receipt this outcome belongs to. Never edits that receipt.</p>
+      </div>
+
+      <div class="field">
+        <label for="o-recorded_on">Recorded on</label>
+        <input id="o-recorded_on" type="date" required />
+      </div>
+
+      <div class="field">
+        <label for="o-actual_result">Actual result</label>
+        <textarea id="o-actual_result" rows="2" required></textarea>
+      </div>
+
+      <div class="field">
+        <label for="o-learning">Learning</label>
+        <textarea id="o-learning" rows="2" required></textarea>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary">Generate</button>
+      </div>
+    </form>
+
+    <div id="outcome-errors" class="errors" hidden></div>
+
+    <div id="outcome-output" class="output" hidden>
+      <div class="output-actions">
+        <button id="dl-outcome-json" class="secondary">Download JSON</button>
+        <button id="dl-outcome-md" class="secondary">Download Markdown</button>
+      </div>
+      <h3>JSON</h3>
+      <pre id="outcome-json-preview"></pre>
+      <h3>Markdown</h3>
+      <pre id="outcome-md-preview"></pre>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>No database. No account. No cloud sync. Everything here stays in your browser until you download it.</p>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
