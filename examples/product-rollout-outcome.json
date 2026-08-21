@@ -1,0 +1,9 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "outcome",
+  "outcome_id": "bo_2026-07-16_k22p",
+  "receipt_id": "bl_2026-06-25_g5h9",
+  "recorded_on": "2026-07-16",
+  "actual_result": "Completion rate held at 70.8% at full traffic; support tickets rose to 44 over three weeks, traced to a payment-gateway timeout affecting roughly 2% of international cards",
+  "learning": "A full-traffic rollout decision should check errors segmented by payment method, not just the aggregate error rate, before calling an issue isolated"
+}

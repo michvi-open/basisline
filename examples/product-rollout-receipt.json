@@ -1,0 +1,30 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-06-25_g5h9",
+  "decision": {
+    "summary": "Continue full rollout of the new checkout flow to 100% of users",
+    "context": "Post-launch review after a 2-week phased rollout of the checkout redesign",
+    "owner": "VP Product",
+    "date": "2026-06-25",
+    "confidence": "medium"
+  },
+  "evidence": [
+    { "source": "Analytics", "metric": "checkout_completion_rate", "value": 71.2, "unit": "percent", "freshness_days": 1 },
+    { "source": "Support", "metric": "related_tickets", "value": 18, "unit": "count", "freshness_days": 1 },
+    { "source": "Error Monitoring", "metric": "checkout_error_rate", "value": 0.4, "unit": "percent", "freshness_days": 1 }
+  ],
+  "evidence_as_of": "2026-06-25T07:00:00Z",
+  "assumptions": [
+    "The 18 support tickets represent isolated edge cases, not a systemic issue",
+    "The completion-rate improvement holds at full traffic volume"
+  ],
+  "known_conflicts": [
+    "Error monitoring and support ticket tags disagreed on the root cause for 6 of the 18 tickets"
+  ],
+  "review_after_days": 21,
+  "revision": {
+    "supersedes": null,
+    "related_receipt_ids": []
+  }
+}

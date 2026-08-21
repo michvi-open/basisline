@@ -1,0 +1,9 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "outcome",
+  "outcome_id": "bo_2026-04-16_a02c",
+  "receipt_id": "bl_2026-04-02_f91a",
+  "recorded_on": "2026-04-16",
+  "actual_result": "Pipeline dropped 9% against target over two weeks; the replacement campaign had a lower CPA but conversion quality score fell further to 31%",
+  "learning": "The CPA spike was audience fatigue as assumed, but the pause removed a channel that was still contributing pipeline volume despite the quality concerns"
+}

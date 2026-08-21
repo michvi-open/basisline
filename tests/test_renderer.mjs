@@ -11,7 +11,7 @@
  *
  * Usage: node tests/test_renderer.mjs
  */
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import assert from "assert";
@@ -96,6 +96,40 @@ try {
 } catch (e) {
   console.log("[PASS] renderCombinedMarkdown throws on mismatched receipt_id");
   passed++;
+}
+
+console.log(`\n${passed} passed, ${failed} failed.`);
+
+// --- smoke test: renderer must work generically across all example pairs,
+//     not just the marketing-budget case it was originally written against ---
+console.log("\n--- cross-example smoke tests ---");
+
+const receiptFiles = readdirSync(join(ROOT, "examples")).filter((f) => f.endsWith("-receipt.json"));
+
+for (const receiptFile of receiptFiles) {
+  const baseName = receiptFile.replace("-receipt.json", "");
+  const outcomeFile = `${baseName}-outcome.json`;
+  const r = JSON.parse(readFileSync(join(ROOT, "examples", receiptFile)));
+  const outcomeExists = existsSync(join(ROOT, "examples", outcomeFile));
+  const o = outcomeExists ? JSON.parse(readFileSync(join(ROOT, "examples", outcomeFile))) : null;
+
+  try {
+    const receiptMd = renderReceiptMarkdown(r);
+    assert.ok(receiptMd.includes(r.decision.summary), "receipt Markdown must contain decision summary");
+    assert.ok(receiptMd.includes(r.decision.owner), "receipt Markdown must contain owner");
+
+    if (o) {
+      const combinedMd = renderCombinedMarkdown(r, o);
+      assert.ok(combinedMd.includes(o.actual_result), "combined Markdown must contain outcome result");
+      assert.ok(combinedMd.includes(o.learning), "combined Markdown must contain learning");
+    }
+
+    console.log(`[PASS] ${baseName} renders without error, output contains expected content`);
+    passed++;
+  } catch (e) {
+    console.log(`[FAIL] ${baseName}: ${e.message}`);
+    failed++;
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed.`);

@@ -1,0 +1,9 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "outcome",
+  "outcome_id": "bo_2026-05-10_e7f2",
+  "receipt_id": "bl_2026-03-10_c3d1",
+  "recorded_on": "2026-05-10",
+  "actual_result": "Only 24 of 40 seats activated; migration completed with minor data loss in two spaces",
+  "learning": "Seat estimates should be based on active-user counts, not headcount; a pending security item should block approval rather than just be noted"
+}

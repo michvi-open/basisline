@@ -1,0 +1,30 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-04-02_f91a",
+  "decision": {
+    "summary": "Pause Meta Ads campaign 'Spring-Retarget-2026'",
+    "context": "Weekly performance review for paid social, Q2 2026",
+    "owner": "Growth Marketing Lead",
+    "date": "2026-04-02",
+    "confidence": "medium"
+  },
+  "evidence": [
+    { "source": "Meta Ads Manager", "metric": "cost_per_acquisition", "value": 1450, "unit": "INR", "freshness_days": 1 },
+    { "source": "CRM", "metric": "conversion_quality_score", "value": 38, "unit": "percent", "freshness_days": 2 },
+    { "source": "CRM", "metric": "attributed_conversions", "value": 210, "unit": "count", "freshness_days": 1 }
+  ],
+  "evidence_as_of": "2026-04-02T08:00:00Z",
+  "assumptions": [
+    "The CPA rise reflects genuine audience fatigue, not a tracking issue",
+    "Pausing will not materially affect Q2 pipeline targets"
+  ],
+  "known_conflicts": [
+    "Meta reported 340 conversions for the same period, 62% higher than the CRM-attributed count"
+  ],
+  "review_after_days": 14,
+  "revision": {
+    "supersedes": null,
+    "related_receipt_ids": []
+  }
+}

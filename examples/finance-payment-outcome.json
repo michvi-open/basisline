@@ -1,0 +1,9 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "outcome",
+  "outcome_id": "bo_2026-07-02_d18e",
+  "receipt_id": "bl_2026-05-18_b44d",
+  "recorded_on": "2026-07-02",
+  "actual_result": "Supplier raised a dispute over 3 unresolved snag-list items worth ₹1.8 lakh; payment was partially clawed back via credit note",
+  "learning": "Final payment release should require an explicit snag-list closure checklist, not a general confirmation email"
+}

@@ -1,0 +1,30 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-03-10_c3d1",
+  "decision": {
+    "summary": "Approve Notion Enterprise as team wiki vendor",
+    "context": "Vendor selection for internal knowledge base, FY26",
+    "owner": "Head of Operations",
+    "date": "2026-03-10",
+    "confidence": "high"
+  },
+  "evidence": [
+    { "source": "Procurement", "metric": "annual_cost", "value": 480000, "unit": "INR", "freshness_days": 3 },
+    { "source": "Security", "metric": "review_score", "value": 92, "unit": "percent", "freshness_days": 7 },
+    { "source": "IT", "metric": "seats_requested", "value": 40, "unit": "count", "freshness_days": 1 }
+  ],
+  "evidence_as_of": "2026-03-10T09:00:00Z",
+  "assumptions": [
+    "40 seats will be actively used within Q2",
+    "Migration from Confluence completes without major data loss"
+  ],
+  "known_conflicts": [
+    "Security review flagged SSO setup as pending, not yet confirmed live"
+  ],
+  "review_after_days": 60,
+  "revision": {
+    "supersedes": null,
+    "related_receipt_ids": []
+  }
+}

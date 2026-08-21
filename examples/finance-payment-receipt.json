@@ -1,0 +1,30 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-05-18_b44d",
+  "decision": {
+    "summary": "Release final payment to supplier Meridian Fit-Outs for office renovation",
+    "context": "Accounts payable review for Q2 facilities capex",
+    "owner": "Finance Controller",
+    "date": "2026-05-18",
+    "confidence": "medium"
+  },
+  "evidence": [
+    { "source": "Accounts Payable", "metric": "invoice_amount", "value": 2150000, "unit": "INR", "freshness_days": 2 },
+    { "source": "Procurement", "metric": "purchase_order_amount", "value": 2150000, "unit": "INR", "freshness_days": 30 },
+    { "source": "Facilities", "metric": "delivery_confirmed", "value": 1, "unit": "boolean", "freshness_days": 5 }
+  ],
+  "evidence_as_of": "2026-05-18T11:00:00Z",
+  "assumptions": [
+    "Facilities sign-off reflects a full, defect-free handover",
+    "No pending change orders remain unbilled"
+  ],
+  "known_conflicts": [
+    "Facilities sign-off email did not explicitly confirm snag-list items were closed"
+  ],
+  "review_after_days": 45,
+  "revision": {
+    "supersedes": null,
+    "related_receipt_ids": []
+  }
+}
