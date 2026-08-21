@@ -1,0 +1,30 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-08-20_a91f",
+  "decision": {
+    "summary": "Increase Google Ads budget by ₹5 lakh",
+    "context": "Marketing budget allocation for Q3 2026",
+    "owner": "Marketing Head",
+    "date": "2026-08-20",
+    "confidence": "medium"
+  },
+  "evidence": [
+    { "source": "GA4", "metric": "leads", "value": 420, "unit": "count", "freshness_days": 2 },
+    { "source": "CRM", "metric": "qualified_leads", "value": 61, "unit": "count", "freshness_days": 1 },
+    { "source": "Finance", "metric": "recognized_revenue", "value": 1820000, "unit": "INR", "freshness_days": 5 }
+  ],
+  "evidence_as_of": "2026-08-20T10:00:00Z",
+  "assumptions": [
+    "CRM-qualified lead rate stays consistent with the last 60 days",
+    "Ad platform attribution roughly reflects real conversions"
+  ],
+  "known_conflicts": [
+    "Google Ads platform attributed 690 conversions — 570% higher than CRM-qualified count"
+  ],
+  "review_after_days": 30,
+  "revision": {
+    "supersedes": null,
+    "related_receipt_ids": []
+  }
+}
