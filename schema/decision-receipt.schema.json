@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://basisline.org/schema/v0.1/decision-receipt.schema.json",
+  "$id": "https://michvi.com/open-source/basisline/schema/v0.1/decision-receipt.schema.json",
   "title": "Basisline Decision Receipt",
   "description": "v0.1 — captures the evidence, assumptions, and decision itself. Immutable once created. See spec/v0.1.md section 4.1.",
   "type": "object",

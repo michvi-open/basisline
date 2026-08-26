@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://basisline.org/schema/v0.1/outcome-record.schema.json",
+  "$id": "https://michvi.com/open-source/basisline/schema/v0.1/outcome-record.schema.json",
   "title": "Basisline Outcome Record",
   "description": "v0.1 — links a later-known outcome to a Decision Receipt without altering the original record. See spec/v0.1.md section 4.2.",
   "type": "object",

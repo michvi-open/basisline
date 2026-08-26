@@ -23,7 +23,7 @@ No account. No proprietary database. No vendor lock-in.
 ## Try it
 
 ```bash
-git clone https://github.com/<org>/basisline.git
+git clone https://github.com/michvi-open/basisline.git
 cd basisline/reference-app
 python3 -m http.server 8000
 ```
