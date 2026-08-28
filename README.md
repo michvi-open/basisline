@@ -63,3 +63,9 @@ npm test
 ```
 
 The v0.1 test suite covers schema validation, deterministic rendering, cross-example smoke tests, and reference-app logic.
+
+## Acknowledgements
+
+Basisline was initiated by Shikhar Jha as an open, vendor-neutral specification.
+
+Special acknowledgement is extended to Ashok Kumar Jha and Vinita Jha for their continued support of the work, and to [Michvi LLP](https://michvi.com) for supporting its development and publication.
