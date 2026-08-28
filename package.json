@@ -5,5 +5,8 @@
   "type": "module",
   "description": "Open specification for preserving the evidence, assumptions, and outcomes behind important business decisions.",
   "license": "SEE LICENSE IN LICENSE",
-  "dependencies": {}
+  "dependencies": {},
+  "scripts": {
+    "test": "python3 tests/validate_examples.py && node tests/test_renderer.mjs && node tests/test_reference_app.mjs"
+  }
 }
