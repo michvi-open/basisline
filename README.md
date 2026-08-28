@@ -47,3 +47,19 @@ SPEC-LICENSE
 Basisline was initiated as an open specification by Shikhar Jha. The specification is vendor-neutral and may be implemented independently.
 
 *Developed with support from Michvi LLP.*
+
+## Testing
+
+Install the Python test dependency:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+```
+
+Then run the complete test suite:
+
+```bash
+npm test
+```
+
+The v0.1 test suite covers schema validation, deterministic rendering, cross-example smoke tests, and reference-app logic.
