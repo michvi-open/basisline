@@ -40,13 +40,13 @@ SPEC-LICENSE
 
 ## Status
 
-**Draft v0.1 — specification frozen for reference implementation testing. Breaking changes may occur before v1.0.**
+**v0.1 — specification frozen for reference implementation testing. Breaking changes may occur before v1.0.**
 
 ## Attribution
 
 Basisline was initiated as an open specification by Shikhar Jha. The specification is vendor-neutral and may be implemented independently.
 
-*Developed with support from Michvi LLP.*
+*Developed with support from [Michvi LLP](https://michvi.com).*
 
 ## Testing
 
