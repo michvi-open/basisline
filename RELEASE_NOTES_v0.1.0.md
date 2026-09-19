@@ -24,11 +24,11 @@ No account. No proprietary database. No vendor lock-in.
 
 ```bash
 git clone https://github.com/michvi-open/basisline.git
-cd basisline/reference-app
-python3 -m http.server 8000
+cd basisline
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Open http://localhost:8000.
+Open http://127.0.0.1:8000/reference-app/.
 
 ## Core model
 
@@ -37,7 +37,7 @@ Decision Receipt:   Evidence → Assumptions → Decision
 Outcome Record:     Decision Receipt → Outcome → Learning
 ```
 
-Both record types are immutable once created. An outcome never edits its receipt — it's a separate, linked record. A revised decision creates a new receipt with `revision.supersedes` pointing to the original.
+Both record types are append-only by specification and MUST NOT be modified after creation. An outcome is a separate, linked record. A revised decision creates a new receipt with `revision.supersedes` pointing to the original. These are protocol requirements; the files remain editable, and the application does not enforce or verify their history.
 
 ## What this is not
 

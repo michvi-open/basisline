@@ -1,8 +1,28 @@
 /**
  * Pure, DOM-free functions that assemble Basisline record objects from
- * already-parsed form values. Kept separate from app.js so they can be
+ * form values. Kept separate from app.js so they can be
  * unit tested under Node without a browser.
  */
+
+// HTML number inputs accept decimal and exponent notation, not numeric prefixes,
+// hexadecimal, Infinity, or empty strings. Leave invalid values for validation.
+export function parseFormNumber(text) {
+  if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text)) return NaN;
+  const value = Number(text);
+  return Number.isFinite(value) ? value : NaN;
+}
+
+export function parseEvidenceRows(rows) {
+  return rows
+    .filter((row) => Object.values(row).some((value) => value.trim() !== ""))
+    .map((row) => ({
+      source: row.source.trim(),
+      metric: row.metric.trim(),
+      value: parseFormNumber(row.value),
+      unit: row.unit.trim(),
+      freshness_days: parseFormNumber(row.freshness_days),
+    }));
+}
 
 /**
  * Splits a textarea's contents into a clean array of non-empty lines.
