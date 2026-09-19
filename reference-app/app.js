@@ -1,5 +1,5 @@
 import { validate } from "./lib/validate.js";
-import { buildReceiptObject, buildOutcomeObject, linesToArray } from "./lib/form-mapping.js";
+import { buildReceiptObject, buildOutcomeObject, linesToArray, parseFormNumber, parseEvidenceRows } from "./lib/form-mapping.js";
 import { renderReceiptMarkdown, renderOutcomeMarkdown } from "../renderer/render.js";
 
 // --- tab switching ---
@@ -27,7 +27,7 @@ function addEvidenceRow() {
   row.innerHTML = `
     <input placeholder="Source (e.g. GA4)" class="ev-source" />
     <input placeholder="Metric (e.g. leads)" class="ev-metric" />
-    <input placeholder="Value" type="number" class="ev-value" />
+    <input placeholder="Value" type="number" step="any" class="ev-value" />
     <input placeholder="Unit (e.g. count, INR)" class="ev-unit" />
     <input placeholder="Freshness (days)" type="number" class="ev-freshness" />
     <button type="button" class="remove-row" title="Remove row">&times;</button>
@@ -40,15 +40,14 @@ document.getElementById("add-evidence-row").addEventListener("click", addEvidenc
 addEvidenceRow(); // start with one row
 
 function collectEvidence() {
-  return Array.from(evidenceRowsEl.querySelectorAll(".evidence-row"))
+  return parseEvidenceRows(Array.from(evidenceRowsEl.querySelectorAll(".evidence-row"))
     .map((row) => ({
-      source: row.querySelector(".ev-source").value.trim(),
-      metric: row.querySelector(".ev-metric").value.trim(),
-      value: parseFloat(row.querySelector(".ev-value").value),
-      unit: row.querySelector(".ev-unit").value.trim(),
-      freshness_days: parseInt(row.querySelector(".ev-freshness").value, 10),
-    }))
-    .filter((e) => e.source && e.metric); // drop fully-empty rows
+      source: row.querySelector(".ev-source").value,
+      metric: row.querySelector(".ev-metric").value,
+      value: row.querySelector(".ev-value").value,
+      unit: row.querySelector(".ev-unit").value,
+      freshness_days: row.querySelector(".ev-freshness").value,
+    })));
 }
 
 // --- generic helpers ---
@@ -88,6 +87,13 @@ let currentReceiptMd = "";
 receiptForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
+  const evidenceAsOf = toIsoDateTime(document.getElementById("r-evidence_as_of").value);
+  if (!evidenceAsOf) {
+    showErrors(receiptErrorsEl, ["Evidence as of: select a valid browser-local date and time; nonexistent daylight-saving times are not accepted."]);
+    receiptOutputEl.hidden = true;
+    return;
+  }
+
   const fields = {
     receipt_id: document.getElementById("r-receipt_id").value.trim(),
     summary: document.getElementById("r-summary").value.trim(),
@@ -96,10 +102,10 @@ receiptForm.addEventListener("submit", (e) => {
     date: document.getElementById("r-date").value,
     confidence: document.getElementById("r-confidence").value,
     evidence: collectEvidence(),
-    evidence_as_of: toIsoDateTime(document.getElementById("r-evidence_as_of").value),
+    evidence_as_of: evidenceAsOf,
     assumptions: linesToArray(document.getElementById("r-assumptions").value),
     known_conflicts: linesToArray(document.getElementById("r-known_conflicts").value),
-    review_after_days: parseInt(document.getElementById("r-review_after_days").value, 10),
+    review_after_days: parseFormNumber(document.getElementById("r-review_after_days").value),
     supersedes: document.getElementById("r-supersedes").value.trim() || null,
     related_receipt_ids: linesToArray(document.getElementById("r-related").value),
   };
@@ -178,9 +184,18 @@ document.getElementById("dl-outcome-md").addEventListener("click", () => {
   download(`${currentOutcome.outcome_id}.md`, currentOutcomeMd, "text/markdown");
 });
 
-// datetime-local input gives "2026-08-20T10:00" (no seconds, no timezone) —
-// normalize to the schema's required ISO 8601 date-time format.
+// Only the browser boundary interprets unzoned form input. Date uses the browser's
+// local timezone; toISOString converts that instant to UTC. Reject normalization
+// of impossible dates / DST gaps. For DST overlaps, Date selects the earlier instant.
 function toIsoDateTime(localValue) {
-  if (!localValue) return "";
-  return localValue.length === 16 ? `${localValue}:00Z` : localValue;
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(localValue);
+  if (!parts) return "";
+  const date = new Date(localValue);
+  const [, year, month, day, hour, minute, second = "0", fraction = "0"] = parts;
+  if (!Number.isFinite(date.getTime()) || Number(year) < 1 ||
+      date.getFullYear() !== Number(year) || date.getMonth() + 1 !== Number(month) ||
+      date.getDate() !== Number(day) || date.getHours() !== Number(hour) ||
+      date.getMinutes() !== Number(minute) || date.getSeconds() !== Number(second) ||
+      date.getMilliseconds() !== Number(fraction.padEnd(3, "0"))) return "";
+  return date.toISOString();
 }

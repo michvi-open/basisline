@@ -12,8 +12,28 @@
  * under Node for testing.
  */
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DATE_TIME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/i;
+const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+
+function validDate(value) {
+  const match = DATE_RE.exec(value);
+  if (!match) return false;
+  const [year, month, day] = match.slice(1).map(Number);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1];
+}
+
+function validDateTime(value) {
+  const match = DATE_TIME_RE.exec(value);
+  if (!match) return false;
+  const [, date, hour, minute, second, , offsetHour, offsetMinute] = match;
+  // Check syntax/components only. :60 is permitted notation; this check does not
+  // establish that a leap second occurred. See the README compatibility notes.
+  return validDate(date) && Number(hour) < 24 && Number(minute) < 60 && Number(second) <= 60 &&
+    (offsetHour === undefined || (Number(offsetHour) < 24 && Number(offsetMinute) < 60));
+}
 
 function typeOf(value) {
   if (value === null) return "null";
@@ -25,11 +45,13 @@ function checkType(value, expected, path, errors) {
   const actual = typeOf(value);
   const expectedList = Array.isArray(expected) ? expected : [expected];
   const ok = expectedList.some((t) => {
-    if (t === "integer") return actual === "number" && Number.isInteger(value);
+    if (t === "integer") return Number.isFinite(value) && Number.isInteger(value);
+    if (t === "number") return actual === "number" && Number.isFinite(value);
     return actual === t;
   });
   if (!ok) {
-    errors.push(`${path}: expected type ${expectedList.join(" or ")}, got ${actual}`);
+    const received = actual === "number" && !Number.isFinite(value) ? `${value} (non-finite number)` : actual;
+    errors.push(`${path}: expected type ${expectedList.join(" or ")}, got ${received}`);
   }
   return ok;
 }
@@ -61,11 +83,11 @@ function validateNode(value, schema, path, errors) {
     if (schema.pattern !== undefined && !new RegExp(schema.pattern).test(value)) {
       errors.push(`${path}: "${value}" does not match pattern ${schema.pattern}`);
     }
-    if (schema.format === "date" && !DATE_RE.test(value)) {
+    if (schema.format === "date" && !validDate(value)) {
       errors.push(`${path}: "${value}" is not a valid date (YYYY-MM-DD)`);
     }
-    if (schema.format === "date-time" && !DATE_TIME_RE.test(value)) {
-      errors.push(`${path}: "${value}" is not a valid ISO 8601 date-time`);
+    if (schema.format === "date-time" && !validDateTime(value)) {
+      errors.push(`${path}: "${value}" has invalid date-time syntax or calendar/time components`);
     }
   }
 
@@ -89,7 +111,7 @@ function validateNode(value, schema, path, errors) {
 
     if (Array.isArray(schema.required)) {
       for (const key of schema.required) {
-        if (!(key in value)) {
+        if (!hasOwn(value, key)) {
           errors.push(`${path}: missing required field "${key}"`);
         }
       }
@@ -97,14 +119,14 @@ function validateNode(value, schema, path, errors) {
 
     if (schema.additionalProperties === false) {
       for (const key of Object.keys(value)) {
-        if (!(key in props)) {
+        if (!hasOwn(props, key)) {
           errors.push(`${path}: unexpected field "${key}" not allowed by schema`);
         }
       }
     }
 
     for (const key of Object.keys(props)) {
-      if (key in value) {
+      if (hasOwn(value, key)) {
         validateNode(value[key], props[key], `${path}.${key}`, errors);
       }
     }

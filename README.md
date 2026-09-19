@@ -15,14 +15,18 @@ No account. No proprietary database. No vendor lock-in.
 ## Try it
 
 ```bash
-cd reference-app
-python3 -m http.server 8000
+# Run from the repository root.
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then open **http://localhost:8000**. (Any static file server works — this
+Then open **http://127.0.0.1:8000/reference-app/**. (Any static file server works — this
 just needs to not be opened via `file://`, since the app fetches
 `schema/*.json` at runtime. See [reference-app/README.md](reference-app/README.md)
 for why.)
+
+Records are append-only by specification: existing records MUST NOT be modified.
+This is a workflow requirement; the files remain editable and the application
+does not enforce or verify their history.
 
 ## Repository Structure
 
