@@ -1,0 +1,9 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "outcome",
+  "outcome_id": "bo_2026-09-20_a1",
+  "receipt_id": "bl_2026-09-19_a1",
+  "recorded_on": "2026-09-20",
+  "actual_result": "Done\n# forged",
+  "learning": "Use <data> & [links](url)."
+}

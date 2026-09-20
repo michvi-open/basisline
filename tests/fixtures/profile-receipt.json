@@ -1,0 +1,12 @@
+{
+  "basisline_version": "0.1",
+  "record_type": "receipt",
+  "receipt_id": "bl_2026-09-19_a1",
+  "decision": { "summary": "Ship", "context": "Test", "owner": "Lee", "date": "2026-09-19", "confidence": "high" },
+  "evidence": [{ "source": "CRM", "metric": "conversion_rate", "value": 71.2, "unit": "percent", "freshness_days": 1 }],
+  "evidence_as_of": "2026-09-19T13:30:00.000Z",
+  "assumptions": ["Assume"],
+  "known_conflicts": [],
+  "review_after_days": 1,
+  "revision": { "supersedes": null, "related_receipt_ids": [] }
+}
