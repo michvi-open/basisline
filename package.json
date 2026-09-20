@@ -5,8 +5,16 @@
   "type": "module",
   "description": "Open specification for preserving the evidence, assumptions, and outcomes behind important business decisions.",
   "license": "SEE LICENSE IN LICENSE",
-  "dependencies": {},
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "canonicalize": "5.1.0",
+    "jsonc-parser": "3.3.1"
+  },
+  "devDependencies": { "commonmark": "0.31.2" },
   "scripts": {
-    "test": "python3 tests/validate_examples.py && node tests/test_renderer.mjs && node tests/test_reference_app.mjs && node tests/test_app_integration.mjs"
+    "test": "npm run test:legacy && npm run test:integrity",
+    "test:legacy": "python3 tests/validate_examples.py && node tests/test_renderer.mjs && node tests/test_reference_app.mjs && node tests/test_app_integration.mjs",
+    "test:integrity": "node --test tests/test_integrity_*.mjs tests/test_markdown_profile.mjs",
+    "integrity": "node integrity/cli.js"
   }
 }

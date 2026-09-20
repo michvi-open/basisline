@@ -28,6 +28,29 @@ Records are append-only by specification: existing records MUST NOT be modified.
 This is a workflow requirement; the files remain editable and the application
 does not enforce or verify their history.
 
+## Optional Integrity companions
+
+[Integrity v0.1](spec/integrity-v0.1.md) creates a detached SHA-256 fingerprint
+and a [literal-safe Markdown projection](spec/markdown-renderer-profile-0.1.md)
+from an existing JSON record. It does not change the frozen record schemas or
+the browser app's legacy renderer. Node.js 22 or later is required for this CLI.
+
+```bash
+npm ci --ignore-scripts
+node integrity/cli.js generate --record examples/marketing-budget-receipt.json --integrity receipt.integrity.json --markdown receipt.md
+node integrity/cli.js verify --record examples/marketing-budget-receipt.json --integrity receipt.integrity.json --markdown receipt.md --json
+```
+
+Output paths must not already exist. Generation is not atomic across files;
+inspect any reported partial outputs after a failure. The CLI supports regular
+files on Linux and macOS with trusted parent directories.
+
+Reports distinguish individual checks. Matching a supplied fingerprint does not
+establish authorship, historical existence, currentness, or history completeness.
+Replacing the JSON, fingerprint, and Markdown together can pass these checks.
+An independently retained fingerprint can be compared with `--expected-digest`;
+the tool does not establish that comparison point's provenance.
+
 ## Repository Structure
 
 ```
@@ -35,6 +58,7 @@ spec/            — the specification itself (versioned)
 schema/          — JSON Schema files for validation
 examples/        — sample receipt/outcome pairs
 renderer/        — record → Markdown rendering logic
+integrity/       — optional strict ingestion, fingerprint, and verification CLI
 reference-app/   — the minimal local form + generator
 tests/           — schema and renderer tests
 CONTRIBUTING.md
@@ -54,10 +78,11 @@ Basisline was initiated as an open specification by Shikhar Jha. The specificati
 
 ## Testing
 
-Install the Python test dependency:
+Install the Python test dependency and locked Node test dependencies:
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
+npm ci --ignore-scripts
 ```
 
 Then run the complete test suite:
@@ -66,7 +91,9 @@ Then run the complete test suite:
 npm test
 ```
 
-The v0.1 test suite covers schema validation, deterministic rendering, cross-example smoke tests, and reference-app logic.
+The suite covers the pre-existing schema, renderer, and browser logic tests plus
+Integrity adversarial, standards-vector, filesystem, and Markdown byte tests.
+Run `npm run test:legacy` or `npm run test:integrity` to select either suite.
 
 ## Acknowledgements
 

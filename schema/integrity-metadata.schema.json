@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Basisline Integrity Metadata 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["basisline_integrity_version", "record_id", "record_type", "canonicalization", "hash_algorithm", "digest_encoding", "digest"],
+  "properties": {
+    "basisline_integrity_version": { "type": "string", "const": "0.1" },
+    "record_id": { "type": "string", "pattern": "^(bl|bo)_[0-9]{4}-[0-9]{2}-[0-9]{2}_[a-z0-9]+$" },
+    "record_type": { "type": "string", "enum": ["receipt", "outcome"] },
+    "canonicalization": { "type": "string", "const": "RFC8785" },
+    "hash_algorithm": { "type": "string", "const": "SHA-256" },
+    "digest_encoding": { "type": "string", "const": "hex-lower" },
+    "digest": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$" }
+  }
+}

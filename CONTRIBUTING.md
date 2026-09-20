@@ -10,12 +10,16 @@ Per the frozen specification's non-goals, the following are **not** accepted
 as pull requests against this repository. If you'd like to build one of
 these on top of Basisline, please do so as a separate, independent project:
 
-- Cryptographic signing / hashing of records
+- Cryptographic signing of records
 - A plugin system
 - An API or hosted service
 - A database backend
 - Authentication / accounts
 - SaaS features of any kind
+
+Optional record fingerprints and their detached companions are covered by
+[Integrity v0.1](spec/integrity-v0.1.md). This functionality does not change the
+frozen v0.1 receipt/outcome schemas or add signing to the repository's scope.
 
 ## How to contribute
 

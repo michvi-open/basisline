@@ -30,5 +30,8 @@ jobs:
       - name: Install Python test dependencies
         run: python -m pip install -r requirements-dev.txt
 
+      - name: Install locked Node dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
       - name: Run tests
         run: npm test
