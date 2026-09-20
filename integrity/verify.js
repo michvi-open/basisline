@@ -60,8 +60,10 @@ function validateRecord(parsed) {
 
 function integerFields(parsed) {
   for (const [path, info] of parsed.numbers) {
-    if ((path === '/review_after_days' || /^\/evidence\/\d+\/freshness_days$/.test(path)) && !info.integer) {
-      throw new IntegrityError('RAW_INTEGER_REQUIRED', 1, { path });
+    const integerField = (path.length === 1 && path[0] === 'review_after_days') ||
+      (path.length === 3 && path[0] === 'evidence' && path[2] === 'freshness_days' && /^\d+$/.test(path[1]));
+    if (integerField && !info.integer) {
+      throw new IntegrityError('RAW_INTEGER_REQUIRED', 1, { path: pointer(path) });
     }
   }
   return true;
@@ -90,7 +92,7 @@ export function prepareRecord(recordBytes, limits, report) {
   const numeric = attempt(report, 'numeric_profile', () => integerFields(parsed));
   const record = attempt(report, 'record_schema', () => validateRecord(parsed));
   for (const [path, info] of parsed.numbers) {
-    if (info.rounded && report.diagnostics.length < 20) report.diagnostics.push({ code: 'DECIMAL_ROUNDING', path });
+    if (info.rounded && report.diagnostics.length < 20) report.diagnostics.push({ code: 'DECIMAL_ROUNDING', path: pointer(path) });
   }
   if (!numeric || !record) return undefined;
   const bytes = attempt(report, 'canonicalization', () => canonicalBytes(record, limits));

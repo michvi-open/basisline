@@ -26,6 +26,10 @@ The implementation uses the locked jsonc-parser scanner before its visitor.
 Scanning checks numeric spans, Unicode, depth, and token budget. The visitor
 rejects duplicate decoded names before assignment, so `a` and `\u0061` collide.
 Objects have null prototypes and own members; completed containers are frozen.
+Numeric-token locations retain bounded-depth path segments sharing ancestor
+names, rather than a full JSON Pointer per number. Pointers are serialized only
+for reported diagnostics (at most 20) and schema-integer errors. Long ancestor
+names therefore do not multiply allocation by the number of numeric descendants.
 Parser error recovery is disabled by throwing on every reported error.
 The JCS library is behind an adapter that receives only these owned trees.
 
