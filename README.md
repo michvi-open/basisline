@@ -12,7 +12,46 @@ No account. No proprietary database. No vendor lock-in.
 
 📄 **[Read the full v0.1 specification →](spec/v0.1.md)**
 
-## Try it
+## The 30-second version
+
+A decision gets made using evidence available at the time. Later, the numbers,
+assumptions, dashboards, people, or context may have changed.
+
+Basisline keeps the decision, its evidence, assumptions, known conflicts, and
+review point in a portable record. The outcome can be recorded separately later.
+For example: an ad platform reports 690 conversions while the CRM records 61
+qualified leads. A budget decision is made anyway. Basisline preserves what was
+decided, which evidence was available, and the known conflict at that time.
+
+## Try the integrity check
+
+The repository includes a real decision receipt you can fingerprint and verify.
+Change the authoritative JSON after fingerprinting and verification fails.
+
+Requires Node.js 22 or later.
+
+```bash
+npm ci --ignore-scripts
+tmpdir="$(mktemp -d)"
+cp examples/marketing-budget-receipt.json "$tmpdir/receipt.json"
+
+node integrity/cli.js generate --record "$tmpdir/receipt.json" --integrity "$tmpdir/receipt.integrity.json" --markdown "$tmpdir/receipt.md"
+node integrity/cli.js verify --record "$tmpdir/receipt.json" --integrity "$tmpdir/receipt.integrity.json" --markdown "$tmpdir/receipt.md" --json
+
+node -e 'const fs=require("fs");const p=process.argv[1];const r=JSON.parse(fs.readFileSync(p,"utf8"));r.decision.summary+=" [changed after fingerprinting]";fs.writeFileSync(p,JSON.stringify(r,null,2)+"\n");' "$tmpdir/receipt.json"
+
+node integrity/cli.js verify --record "$tmpdir/receipt.json" --integrity "$tmpdir/receipt.integrity.json" --markdown "$tmpdir/receipt.md" --json; changed_exit=$?
+printf 'CHANGED_EXIT=%s\n' "$changed_exit"
+
+rm -rf "$tmpdir"
+```
+
+This demonstrates correspondence among the supplied artifacts. A self-consistent
+replacement of the JSON, integrity metadata, and Markdown can still pass.
+Basisline does not establish authorship, historical existence, currentness,
+evidence truth, or history completeness.
+
+## Try the browser reference app
 
 ```bash
 # Run from the repository root.
