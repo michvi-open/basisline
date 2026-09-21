@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// No record text is written directly to the terminal. JSON escaping is also
-// extended to format/control characters for human and machine reports alike.
-const terminalJSON = value => JSON.stringify(value).replace(/[\u007f-\u009f\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g,
-  c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+// Load reporting inside the startup boundary, like the verification modules.
+let encodeReport;
 
 async function run(argv) {
   const { newReport, failedCheck, finish, verifyArtifacts } = await import('./verify.js');
   const { generateArtifacts } = await import('./generate.js');
   const { readCaptured, writeCompanions } = await import('./files.js');
   const { IntegrityError, limitsFor } = await import('./errors.js');
+  const { serializeReport, setReportValue, copyReportDetail } = await import('./report.js');
+  encodeReport = serializeReport;
   let report = newReport();
   try {
     const command = argv.shift();
@@ -47,7 +47,7 @@ async function run(argv) {
       report = artifacts.report;
       if (report.exit_code === 0) {
         const outputs = await writeCompanions({ recordPath, integrityPath, markdownPath, ...artifacts });
-        report.checks.output = { status: 'pass' }; report.outputs = outputs;
+        report.checks.output = { status: 'pass' }; setReportValue(report, 'outputs', outputs);
       }
     } else {
       // Acquire each input once. Collect independent I/O failures so precedence
@@ -73,7 +73,11 @@ async function run(argv) {
         if (cause.input === 'related-record') cause.index = relatedIndices[cause.index];
       }
       const replaced = new Set();
-      for (const [check, failure] of failures) {
+      for (const [check, capturedFailure] of failures) {
+        const detail = copyReportDetail(capturedFailure, report);
+        const failure = { ...detail.value, status: capturedFailure.status,
+          code: capturedFailure.code, exit_code: capturedFailure.exit_code,
+          ...(detail.truncated ? { details_truncated: true } : {}) };
         // Replace the API's synthetic missing-input result with the actual
         // acquisition failure. Keep additional failures for the same check.
         if (check === 'relationships' && report.checks[check].exit_code) {
@@ -85,12 +89,14 @@ async function run(argv) {
         else report.checks[check + '_io_' + Object.keys(report.checks).length] = failure;
       }
     }
-  } catch (e) { report.checks.operation = failedCheck(e); }
+  } catch (e) { report.checks.operation = failedCheck(e, report); }
   return finish(report);
 }
 
 let report;
 try { report = await run(process.argv.slice(2)); }
 catch { report = { report_version: '0.1', result: 'incomplete', exit_code: 4, code: 'TOOL_STARTUP_FAILURE', assurance: { historical_existence: 'not_established', authorship: 'not_established', currentness: 'not_established', history_completeness: 'not_established' } }; }
-process.stdout.write(terminalJSON(report) + '\n');
-process.exitCode = report.exit_code;
+// Before modules load, report contains only the fixed startup failure above.
+const output = encodeReport ? encodeReport(report) : { text: JSON.stringify(report) + '\n', exitCode: report.exit_code };
+process.stdout.write(output.text);
+process.exitCode = output.exitCode;

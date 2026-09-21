@@ -28,7 +28,8 @@ rejects duplicate decoded names before assignment, so `a` and `\u0061` collide.
 Objects have null prototypes and own members; completed containers are frozen.
 Numeric-token locations retain bounded-depth path segments sharing ancestor
 names, rather than a full JSON Pointer per number. Pointers are serialized only
-for reported diagnostics (at most 20) and schema-integer errors. Long ancestor
+for reported diagnostics (at most 20) and schema-integer errors, stopping at the
+report string budget without expanding the full path. Long ancestor
 names therefore do not multiply allocation by the number of numeric descendants.
 Parser error recovery is disabled by throwing on every reported error.
 The JCS library is behind an adapter that receives only these owned trees.
@@ -241,6 +242,36 @@ for these frozen schemas. Array/object/string allocation is bounded by the byte
 and token budgets. Up to 20 diagnostics are emitted; their absence is not proof
 that no further observations exist. Related-record inputs multiply the input-byte
 budget; callers should not raise limits indiscriminately in constrained services.
+
+Report construction has separate, non-configurable budgets. Copied strings,
+including diagnostic paths, displayed record IDs, output paths, and detail keys,
+are limited to 1,024 bytes in their terminal-safe JSON encoding (including string
+quotes). Prefixes stop at code-point boundaries. Diagnostic factories are not
+evaluated after the 20-entry capacity is reached. Optional detail copying stops
+at four container levels, 128 entries per collection, 1,024 visited values, or
+32 KiB of conservatively accounted encoded material per insertion. All optional
+material shares a 64 KiB construction budget per report. Fixed check statuses,
+codes, exit codes, and the four assurance entries are retained independently.
+The current 32-related-record plus one-receipt scope permits at most 68 failure
+causes; all are retained and reduced before any optional reporting truncation.
+
+Omitted/prefix-only report material sets `report_truncated: true`. Diagnostics
+also set `diagnostics_truncated: true`; shortened pointers carry
+`path_truncated: true`. Other shortened top-level fields carry a corresponding
+`<field>_truncated: true`, and shortened check details carry
+`details_truncated: true`. These flags are absent when unnecessary. A shortened
+ID/path is display information, not a complete identifier or resolvable pointer.
+All comparisons still use the complete authoritative values. These observational
+omissions do not change validation results or exit precedence.
+
+The CLI incrementally encodes at most 262,144 UTF-8 bytes including terminal
+escaping and the final LF. It does not build a large serialized report and then
+truncate it. A defensive encoder refusal emits a small `REPORT_RESOURCE_LIMIT`
+report with result `incomplete`, all four assurance entries, and exit 2 unless
+an existing exit 3 or 4 has higher precedence. Encoder traversal is additionally
+limited to 8 container levels, 128 entries per collection, and 8,192 values.
+Input limits alone are not memory/output guarantees; these bounds cover report
+construction and output, not every possible resource-exhaustion attack.
 
 The ten repository examples are at most 1,198 bytes, depth three, 39 JSON values,
 and 171 UTF-16 code units per string. The defaults leave substantial headroom;

@@ -30,19 +30,30 @@ export async function readCaptured(path, maxBytes) {
     if (!before.isFile()) throw new IntegrityError('REGULAR_FILE_REQUIRED');
     if (before.size > BigInt(maxBytes)) throw new IntegrityError('RESOURCE_BYTES');
     const chunks = [];
-    let total = 0;
+    // Fill each fixed-size chunk across short reads. A view of a one-byte read
+    // must not retain a fresh 64 KiB backing store on every iteration. Never
+    // preallocate from stat.size: it can be stale or describe a sparse file.
+    let chunk = Buffer.alloc(Math.min(65536, maxBytes + 1));
+    let total = 0, used = 0;
     while (true) {
-      const chunk = Buffer.alloc(Math.min(65536, maxBytes + 1 - total));
-      const { bytesRead } = await handle.read(chunk, 0, chunk.length, null);
+      const { bytesRead } = await handle.read(chunk, used, chunk.length - used, null);
       if (!bytesRead) break;
-      total += bytesRead;
+      total += bytesRead; used += bytesRead;
       if (total > maxBytes) throw new IntegrityError('RESOURCE_BYTES');
-      chunks.push(chunk.subarray(0, bytesRead));
+      if (BigInt(total) > before.size) throw new IntegrityError('FILE_CHANGED_DURING_READ', 4);
+      if (used === chunk.length) {
+        chunks.push(chunk);
+        // At the payload limit this is a single-byte EOF/overflow probe, not
+        // another payload chunk. An over-limit byte is never returned.
+        chunk = Buffer.alloc(Math.min(65536, maxBytes + 1 - total));
+        used = 0;
+      }
     }
     const after = await handle.stat({ bigint: true });
-    if (before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs) {
+    if (BigInt(total) !== before.size || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs) {
       throw new IntegrityError('FILE_CHANGED_DURING_READ', 4);
     }
+    if (used) chunks.push(chunk.subarray(0, used));
     return Buffer.concat(chunks, total);
   } catch (error) { throw ioError(error, true); }
   finally { if (handle) await handle.close(); }

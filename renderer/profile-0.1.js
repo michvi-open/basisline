@@ -43,7 +43,9 @@ export function renderProfile(record, maxOutputBytes) {
     size += Buffer.byteLength(text, 'utf8');
     if (size > maxOutputBytes + 1) throw new IntegrityError('RESOURCE_MARKDOWN_BYTES');
     chunk += text;
-    if (chunk.length >= 4096) { parts.push(chunk); chunk = ''; }
+    // Materialize completed chunks now. Retaining concatenation ropes until a
+    // final join multiplies heap use by the number of tiny literal fragments.
+    if (chunk.length >= 4096) { parts.push(Buffer.from(chunk, 'utf8')); chunk = ''; }
   };
   const heading = text => append('## ' + text + '\n\n');
   const field = (label, value) => {
@@ -89,6 +91,6 @@ export function renderProfile(record, maxOutputBytes) {
     field('Learning', record.learning);
   }
   // Every template section ends with two LF; remove only the last one.
-  parts.push(chunk);
-  return Buffer.from(parts.join('').slice(0, -1), 'utf8');
+  parts.push(Buffer.from(chunk, 'utf8'));
+  return Buffer.concat(parts, size - 1);
 }

@@ -17,8 +17,7 @@ const assurance = {
 };
 function containedReport(args) {
   const child = spawnSync(process.execPath, ['--max-old-space-size=64', ...args], {
-    // Twenty escaped diagnostic paths in the rounded-number case exceed 1 MiB.
-    cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 4 * 1024 * 1024,
+    cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 256 * 1024,
   });
   assert.ifError(child.error);
   assert.equal(child.signal, null);
@@ -111,5 +110,39 @@ test('RC-01 numeric tracking and capped diagnostics stay bounded for rounded des
   const report = containedReport(['--input-type=module', '-e', source]);
   assert.equal(report.exit_code, 1);
   assert.equal(report.diagnostics.length, 20);
-  assert.equal(report.diagnostics[19].path, '/' + '~0~1'.repeat(16384) + '/19');
+  assert.equal(report.diagnostics[19].path, '/' + '~0~1'.repeat(255) + '~');
+  assert.equal(report.diagnostics[19].path_truncated, true);
+  assert.equal(report.diagnostics_truncated, true);
+});
+
+test('diagnostic report stays bounded for a static maximum-size hostile key', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'basisline-report-bound-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const record = join(dir, 'record.json'), sidecar = join(dir, 'sidecar.json'), markdown = join(dir, 'record.md');
+  const raw = Buffer.from('{'+JSON.stringify('\u007f'.repeat(1000000))+':['+Array(20).fill('1.0000000000000001').join(',')+']}');
+  assert.equal(raw.length, 1000386);
+  assert.ok(raw.length < 1048576);
+  await writeFile(record, raw);
+  const child = spawnSync(process.execPath, ['--max-old-space-size=512', cli, 'generate', '--record', record, '--integrity', sidecar, '--markdown', markdown], {
+    cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 256 * 1024,
+  });
+  assert.ifError(child.error);
+  assert.equal(child.signal, null);
+  assert.equal(child.status, 1);
+  assert.equal(child.stderr, '');
+  assert.equal(child.stdout.split('\n').length, 2);
+  assert.ok(Buffer.byteLength(child.stdout) < 32 * 1024);
+  const report = JSON.parse(child.stdout);
+  assert.equal(report.checks.record_schema.code, 'RECORD_SCHEMA');
+  assert.equal(report.diagnostics.length, 20);
+  assert.ok(report.diagnostics.every(d => d.path === '/' + '\u007f'.repeat(170) && d.path_truncated === true));
+  assert.equal(report.diagnostics_truncated, true);
+  assert.equal(report.report_truncated, true);
+  await assert.rejects(stat(sidecar), { code: 'ENOENT' });
+  await assert.rejects(stat(markdown), { code: 'ENOENT' });
+  const again = spawnSync(process.execPath, ['--max-old-space-size=512', cli, 'generate', '--record', record, '--integrity', sidecar, '--markdown', markdown], {
+    cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 256 * 1024,
+  });
+  assert.equal(again.status, 1);
+  assert.equal(again.stdout, child.stdout);
 });

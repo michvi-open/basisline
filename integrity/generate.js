@@ -1,6 +1,7 @@
 import { newReport, prepareRecord, finish, failedCheck, metadataConstants, recordId } from './verify.js';
 import { limitsFor, IntegrityError } from './errors.js';
 import { renderProfile } from '../renderer/profile-0.1.js';
+import { setReportValue } from './report.js';
 
 export function generateArtifacts({ recordBytes, limits: options = {} } = {}) {
   const report = newReport('generation');
@@ -20,10 +21,10 @@ export function generateArtifacts({ recordBytes, limits: options = {} } = {}) {
       if (integrityBytes.length > limits.maxBytes) throw new IntegrityError('RESOURCE_METADATA_BYTES');
       const markdownBytes = renderProfile(record, limits.maxOutputBytes);
       report.checks.markdown_match = { status: 'pass', code: 'PROJECTION_GENERATED' };
-      report.record_id = recordId(record);
+      setReportValue(report, 'record_id', recordId(record));
       report.computed_digest = digest;
       return { report: finish(report), integrityBytes, markdownBytes };
     }
-  } catch (error) { report.checks.operation = failedCheck(error); }
+  } catch (error) { report.checks.operation = failedCheck(error, report); }
   return { report: finish(report) };
 }
