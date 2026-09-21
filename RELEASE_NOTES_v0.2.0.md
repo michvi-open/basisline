@@ -21,6 +21,8 @@ It includes:
 - machine-readable CLI generation and verification reports
 - explicit exit-code precedence
 - filesystem protections including symlink and overwrite refusal
+- bounded diagnostic/report construction and bounded CLI JSON report serialization
+- defensive bounded file reads, including short-read, growth, and metadata-inconsistency handling
 
 The Integrity profile does not modify the authoritative Basisline JSON record. JSON remains authoritative; Markdown is derived.
 
