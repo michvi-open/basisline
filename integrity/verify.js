@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { validate } from '../reference-app/lib/validate.js';
-import { ingest, pointer } from './ingest.js';
+import { ingest } from './ingest.js';
 import { IntegrityError, limitsFor, snapshot } from './errors.js';
 import { canonicalBytes, sha256 } from './canonicalize.js';
 import { renderProfile } from '../renderer/profile-0.1.js';
+import { addDiagnostic, copyReportDetail, reportPointer, setReportValue } from './report.js';
 
 const schema = name => JSON.parse(readFileSync(new URL('../schema/' + name, import.meta.url), 'utf8'));
 const schemas = Object.freeze({ receipt: schema('decision-receipt.schema.json'), outcome: schema('outcome-record.schema.json') });
@@ -27,15 +28,17 @@ export function finish(report) {
   return report;
 }
 
-export function failedCheck(error) {
+export function failedCheck(error, report) {
   if (!(error instanceof IntegrityError)) return { status: 'fail', code: 'TOOL_FAILURE', exit_code: 4 };
   const status = error.code === 'SCHEMA_FORMAT_UNRESOLVED' ? 'unresolved' : error.exitCode === 2 ? 'unsupported' : 'fail';
-  return { status, code: error.code, exit_code: error.exitCode, ...error.details };
+  const detail = copyReportDetail(error.details, report);
+  return { ...detail.value, status, code: error.code, exit_code: error.exitCode,
+    ...(detail.truncated ? { details_truncated: true } : {}) };
 }
 
 function attempt(report, name, operation) {
   try { const result = operation(); report.checks[name] = { status: 'pass' }; return result; }
-  catch (error) { report.checks[name] = failedCheck(error); return undefined; }
+  catch (error) { report.checks[name] = failedCheck(error, report); return undefined; }
 }
 
 function validateRecord(parsed) {
@@ -52,7 +55,7 @@ function validateRecord(parsed) {
   for (const path of paths) {
     const value = path.reduce((v, k) => v[k], r);
     if (value.startsWith('0000-') || /[Tt]\d{2}:\d{2}:60/.test(value)) {
-      throw new IntegrityError('SCHEMA_FORMAT_UNRESOLVED', 2, { path: pointer(path) });
+      throw new IntegrityError('SCHEMA_FORMAT_UNRESOLVED', 2, reportPointer(path));
     }
   }
   return r;
@@ -60,8 +63,10 @@ function validateRecord(parsed) {
 
 function integerFields(parsed) {
   for (const [path, info] of parsed.numbers) {
-    if ((path === '/review_after_days' || /^\/evidence\/\d+\/freshness_days$/.test(path)) && !info.integer) {
-      throw new IntegrityError('RAW_INTEGER_REQUIRED', 1, { path });
+    const integerField = (path.length === 1 && path[0] === 'review_after_days') ||
+      (path.length === 3 && path[0] === 'evidence' && path[2] === 'freshness_days' && /^\d+$/.test(path[1]));
+    if (integerField && !info.integer) {
+      throw new IntegrityError('RAW_INTEGER_REQUIRED', 1, reportPointer(path));
     }
   }
   return true;
@@ -82,7 +87,7 @@ export const recordId = r => r.record_type === 'receipt' ? r.receipt_id : r.outc
 
 export function prepareRecord(recordBytes, limits, report) {
   if (recordBytes === undefined) {
-    report.checks.record_input = failedCheck(new IntegrityError('RECORD_MISSING', 3));
+    report.checks.record_input = failedCheck(new IntegrityError('RECORD_MISSING', 3), report);
     return undefined;
   }
   const parsed = attempt(report, 'record_input', () => ingest(recordBytes, limits));
@@ -90,7 +95,7 @@ export function prepareRecord(recordBytes, limits, report) {
   const numeric = attempt(report, 'numeric_profile', () => integerFields(parsed));
   const record = attempt(report, 'record_schema', () => validateRecord(parsed));
   for (const [path, info] of parsed.numbers) {
-    if (info.rounded && report.diagnostics.length < 20) report.diagnostics.push({ code: 'DECIMAL_ROUNDING', path });
+    if (info.rounded) addDiagnostic(report, () => ({ code: 'DECIMAL_ROUNDING', ...reportPointer(path) }));
   }
   if (!numeric || !record) return undefined;
   const bytes = attempt(report, 'canonicalization', () => canonicalBytes(record, limits));
@@ -99,7 +104,7 @@ export function prepareRecord(recordBytes, limits, report) {
 
 function observeRelationships(all, report) {
   const seen = new Map(), superseded = new Map();
-  const observations = [];
+  const observe = code => addDiagnostic(report, () => ({ code }));
   for (const p of all) {
     const id = recordId(p.record);
     if (seen.has(id) && seen.get(id).digest !== p.digest) throw new IntegrityError('SAME_ID_DIFFERENT_DIGEST', 1);
@@ -110,29 +115,28 @@ function observeRelationships(all, report) {
       children.add(id); superseded.set(prior, children);
     }
   }
-  for (const children of superseded.values()) if (children.size > 1) observations.push({ code: 'REVISION_FORK' });
+  for (const children of superseded.values()) if (children.size > 1) observe('REVISION_FORK');
   for (const p of all) {
     const r = p.record;
     if (r.record_type === 'outcome') {
       const target = seen.get(r.receipt_id);
-      if (!target || target.record.record_type !== 'receipt') observations.push({ code: 'REFERENCED_RECEIPT_NOT_SUPPLIED' });
-      else observations.push({ code: 'RECEIPT_ID_MATCH_ONLY' });
+      if (!target || target.record.record_type !== 'receipt') observe('REFERENCED_RECEIPT_NOT_SUPPLIED');
+      else observe('RECEIPT_ID_MATCH_ONLY');
     } else if (r.revision?.supersedes) {
       const visited = new Set([recordId(r)]);
       let next = r.revision.supersedes;
       while (next) {
-        if (visited.has(next)) { observations.push({ code: 'REVISION_CYCLE' }); break; }
+        if (visited.has(next)) { observe('REVISION_CYCLE'); break; }
         visited.add(next);
         const target = seen.get(next);
-        if (!target) { observations.push({ code: 'SUPERSEDED_RECEIPT_NOT_SUPPLIED' }); break; }
+        if (!target) { observe('SUPERSEDED_RECEIPT_NOT_SUPPLIED'); break; }
         if (target.record.record_type !== 'receipt') {
-          observations.push({ code: 'REVISION_TARGET_TYPE_MISMATCH' }); break;
+          observe('REVISION_TARGET_TYPE_MISMATCH'); break;
         }
         next = target.record.revision?.supersedes;
       }
     }
   }
-  report.diagnostics.push(...observations.slice(0, Math.max(0, 20 - report.diagnostics.length)));
   return true;
 }
 
@@ -143,7 +147,7 @@ function relationships(prepared, related, receiptBytes, report, limits) {
     const local = newReport(input);
     let p;
     try { p = prepareRecord(bytes, limits, local); }
-    catch (error) { local.checks.operation = failedCheck(error); }
+    catch (error) { local.checks.operation = failedCheck(error, local); }
     for (const [check, failure] of Object.entries(local.checks)) {
       if (failure.exit_code) {
         invalidInput = true;
@@ -187,25 +191,25 @@ export function verifyArtifacts({ recordBytes, integrityBytes, markdownBytes, re
     if (expectedDigest !== undefined && (typeof expectedDigest !== 'string' || !/^[0-9a-f]{64}$/.test(expectedDigest) || expectedDigest.length !== 64)) throw new IntegrityError('EXPECTED_DIGEST_INVALID');
     const prepared = prepareRecord(recordBytes, limits, report);
     let meta;
-    if (integrityBytes === undefined) report.checks.metadata_input = failedCheck(new IntegrityError('METADATA_MISSING', 3));
+    if (integrityBytes === undefined) report.checks.metadata_input = failedCheck(new IntegrityError('METADATA_MISSING', 3), report);
     else {
       const parsed = attempt(report, 'metadata_input', () => ingest(integrityBytes, limits, 1));
       if (parsed) meta = attempt(report, 'metadata_schema', () => validateMetadata(parsed));
     }
     let markdown;
     if (!recordOnly) {
-      if (markdownBytes === undefined) report.checks.markdown_match = failedCheck(new IntegrityError('MARKDOWN_MISSING', 3));
+      if (markdownBytes === undefined) report.checks.markdown_match = failedCheck(new IntegrityError('MARKDOWN_MISSING', 3), report);
       else {
         try { markdown = snapshot(markdownBytes, limits.maxOutputBytes); }
-        catch (e) { report.checks.markdown_match = failedCheck(e); }
+        catch (e) { report.checks.markdown_match = failedCheck(e, report); }
       }
     }
     if (prepared) {
-      report.record_id = recordId(prepared.record);
+      setReportValue(report, 'record_id', recordId(prepared.record));
       report.computed_digest = prepared.digest;
       if (meta) {
         attempt(report, 'record_binding', () => {
-          if (meta.record_id !== report.record_id || meta.record_type !== prepared.record.record_type) throw new IntegrityError('RECORD_BINDING_MISMATCH', 1);
+          if (meta.record_id !== recordId(prepared.record) || meta.record_type !== prepared.record.record_type) throw new IntegrityError('RECORD_BINDING_MISMATCH', 1);
         });
         attempt(report, 'fingerprint_match', () => {
           if (meta.digest !== prepared.digest) throw new IntegrityError('FINGERPRINT_MISMATCH', 1);
@@ -222,7 +226,7 @@ export function verifyArtifacts({ recordBytes, integrityBytes, markdownBytes, re
       const completed = attempt(report, 'relationships', () => relationships(prepared, relatedRecords, receiptBytes, report, limits));
       if (completed === false) report.checks.relationships = { status: 'skipped' };
     }
-  } catch (error) { report.checks.operation = failedCheck(error); }
+  } catch (error) { report.checks.operation = failedCheck(error, report); }
   return finish(report);
 }
 

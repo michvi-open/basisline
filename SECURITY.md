@@ -66,3 +66,10 @@ no multi-file atomicity or power-loss durability guarantee. Resource refusals an
 unresolved date-format compatibility are reported as incomplete, not proof that
 a record violates the Basisline record protocol. A compromised producer,
 verifier, runtime, dependency, or operating system is outside this boundary.
+
+Input byte limits are separate from report limits. The Integrity tool bounds
+copied diagnostic strings, detail traversal, and accumulated report material
+before storage, and caps incremental CLI JSON output at 256 KiB. Truncation is
+explicit and does not change the values used for integrity comparisons. See the
+[report budgets and markers](spec/integrity-v0.1.md#filesystem-and-resource-boundary).
+These controls do not guarantee protection against every denial-of-service attack.

@@ -1,7 +1,7 @@
 MIT License
 
 This license applies to the reference implementation code in this repository
-(schema/, renderer/, reference-app/, tests/) only. It does NOT apply to the
+(schema/, integrity/, renderer/, reference-app/, tests/) only. It does NOT apply to the
 specification document, which is released separately under CC0 1.0 Universal
 (see SPEC-LICENSE).
 

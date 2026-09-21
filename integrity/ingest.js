@@ -63,7 +63,9 @@ export function ingest(bytes, options = {}, maxDepth = 3) {
       if (typeof value === 'number') {
         const info = numericOffsets.get(offset);
         if (!info || !Object.is(info.value, value)) throw new IntegrityError('PARSER_NUMBER_DISAGREEMENT', 4);
-        numbers.set(pointer(path()), info);
+        // Keep references to ancestor names, not a serialized copy per number.
+        // Depth is bounded above; long shared prefixes must not multiply memory.
+        numbers.set(Object.freeze(path()), info);
       }
       attach(value);
     },
