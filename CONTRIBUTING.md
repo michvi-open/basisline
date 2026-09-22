@@ -1,10 +1,12 @@
 # Contributing to Basisline
 
-Basisline v0.1 is frozen. Contributions to the reference implementation
+The Basisline v0.1 record specification and receipt/outcome schemas are frozen.
+Basisline Integrity v0.1 is an optional companion profile introduced with the
+Basisline v0.2.0 repository release. Contributions to the reference implementation
 (schema validation, renderer, reference app, tests) are welcome. Changes to
-the specification itself require a clear rationale — open an issue first.
+the frozen record specification itself require a clear rationale — open an issue first.
 
-## Out of scope for this repository (v0.1)
+## Out of scope for the Basisline v0.1 record specification
 
 Per the frozen specification's non-goals, the following are **not** accepted
 as pull requests against this repository. If you'd like to build one of
