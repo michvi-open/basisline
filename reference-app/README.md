@@ -73,6 +73,31 @@ Numeric inputs accept decimal and exponent notation as whole values. Blank,
 invalid, and non-finite values are rejected, and integer fields are checked
 without truncation. Only completely empty evidence rows are ignored.
 
+The app never silently changes a number you type. Before building a record it
+applies the [Integrity numeric profile](../spec/integrity-v0.1.md#numeric-acceptance-profile)
+to the exact text entered (`lib/number-input.js`):
+
+- **Blocked, with the reason shown:** values too large or too small for a JSON
+  number, whole numbers that binary64 cannot hold exactly (for example
+  `9007199254740993`, `1e23`, or `1.5e300`), and fractions in whole-number fields
+  (`freshness_days`, `review_after_days`), including ones such as
+  `1.0000000000000001` that would round to a whole number.
+- **Accepted with a visible warning:** decimals that binary64 rounds, such as
+  `0.30000000000000001`, which is stored as `0.3`. The warning shows both values.
+  Record exact amounts in a smaller unit where that matters.
+- **Accepted silently:** respellings with the same value, such as `1e2` → `100`
+  or `1.50` → `1.5`.
+
+Browsers' own number-input validation accepts all of the blocked examples above,
+so this check is what prevents silent changes.
+
+Text is checked the same way: unpaired surrogates (usually from a damaged paste)
+and Unicode noncharacters such as U+FFFE are refused with the field's path,
+because Integrity refuses them (`lib/text-input.js`). The form therefore does not
+export numbers or characters that `node integrity/cli.js generate` would refuse.
+The CLI's other limits are not checked in the browser: its 1 MiB input budget,
+and dates it reports as unresolved (year 0000, a `:60` second).
+
 The renderer currently passes record text through as Markdown. See
 [the Markdown limitation](../SECURITY.md#markdown-output) before viewing untrusted
 records in a Markdown viewer.

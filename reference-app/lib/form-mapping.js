@@ -4,12 +4,17 @@
  * unit tested under Node without a browser.
  */
 
+import { analyzeNumberInput } from "./number-input.js";
+
 // HTML number inputs accept decimal and exponent notation, not numeric prefixes,
-// hexadecimal, Infinity, or empty strings. Leave invalid values for validation.
+// hexadecimal, Infinity, or empty strings. Values the Integrity numeric profile
+// cannot store unchanged (overflow, underflow to zero, inexact integers) also
+// become NaN, so they can never be exported silently altered. The app reports
+// the specific reason with checkNumberInputs before validation; leave NaN for
+// the schema validator to flag.
 export function parseFormNumber(text) {
-  if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text)) return NaN;
-  const value = Number(text);
-  return Number.isFinite(value) ? value : NaN;
+  const result = analyzeNumberInput(text);
+  return result.ok ? result.value : NaN;
 }
 
 export function parseEvidenceRows(rows) {

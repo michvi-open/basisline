@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- Same-origin module scripts and styles; fetch only this site's schema files. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>Basisline — Reference App (v0.1)</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -102,6 +104,7 @@
     </form>
 
     <div id="receipt-errors" class="errors" hidden></div>
+    <div id="receipt-warnings" class="warnings" role="status" hidden></div>
 
     <div id="receipt-output" class="output" hidden>
       <div class="output-actions">
