@@ -92,4 +92,51 @@ if (!process.argv.includes("--timezone-child")) {
     input.value = previous;
   }
   console.log(`[PASS] app ${process.env.TZ}: invalid/local-gap times and incomplete evidence blocked`);
+
+  // Numeric inputs are never silently altered: unsupported values block
+  // generation with a reason; rounded decimals generate with a visible warning.
+  const valueInput = row.querySelector(".ev-value");
+  for (const [text, pattern] of [["9007199254740993", /cannot be stored exactly \(it would become 9007199254740992\)/],
+    ["1e23", /cannot be stored exactly/], ["1e400", /too large/], ["1e-400", /too small/]]) {
+    valueInput.value = text;
+    submit();
+    assert.strictEqual(get("receipt-output").hidden, true, text);
+    assert.match(get("receipt-errors").innerHTML, pattern);
+    assert.match(get("receipt-errors").innerHTML, /These numbers cannot be stored exactly as entered:.*Evidence 1 value/);
+  }
+  valueInput.value = "1.25";
+  get("r-review_after_days").value = "1.0000000000000001";
+  submit();
+  assert.strictEqual(get("receipt-output").hidden, true);
+  assert.match(get("receipt-errors").innerHTML, /Review after \(days\): &quot;1\.0000000000000001&quot; must be a whole number/);
+  get("r-review_after_days").value = "1e2";
+  valueInput.value = "0.30000000000000001";
+  submit();
+  assert.strictEqual(get("receipt-output").hidden, false, get("receipt-errors").innerHTML);
+  assert.strictEqual(JSON.parse(get("receipt-json-preview").textContent).evidence[0].value, 0.3);
+  assert.strictEqual(get("receipt-warnings").hidden, false);
+  assert.match(get("receipt-warnings").innerHTML, /you entered &quot;0\.30000000000000001&quot;; the record will store 0\.3\./);
+  valueInput.value = "1.25";
+  submit();
+  assert.strictEqual(get("receipt-output").hidden, false);
+  assert.strictEqual(get("receipt-warnings").hidden, true, "warnings clear on the next exact submission");
+  console.log(`[PASS] app ${process.env.TZ}: unsupported numbers blocked with reasons; rounded decimals warned, not silent`);
+
+  // Text Integrity would refuse (noncharacters, unpaired surrogates) is blocked in both forms.
+  get("r-summary").value = "Price \ufffe";
+  submit();
+  assert.strictEqual(get("receipt-output").hidden, true);
+  assert.match(get("receipt-errors").innerHTML, /cannot be fingerprinted by Basisline Integrity:.*\$\.decision\.summary: contains the Unicode noncharacter U\+FFFE/);
+  get("r-summary").value = "Test";
+  submit();
+  assert.strictEqual(get("receipt-output").hidden, false, get("receipt-errors").innerHTML);
+  for (const [name, value] of Object.entries({ outcome_id: "bo_2026-10-01_t1", receipt_id: "bl_2026-09-19_test",
+    recorded_on: "2026-10-01", actual_result: "Result", learning: "broken \ud800 paste" })) get(`o-${name}`).value = value;
+  get("outcome-form").listeners.get("submit")({ preventDefault() {} });
+  assert.strictEqual(get("outcome-output").hidden, true);
+  assert.match(get("outcome-errors").innerHTML, /\$\.learning: contains an unpaired surrogate \(U\+D800\)/);
+  get("o-learning").value = "Learning";
+  get("outcome-form").listeners.get("submit")({ preventDefault() {} });
+  assert.strictEqual(get("outcome-output").hidden, false, get("outcome-errors").innerHTML);
+  console.log(`[PASS] app ${process.env.TZ}: text Integrity would refuse is blocked in both forms`);
 }

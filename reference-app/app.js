@@ -1,6 +1,17 @@
 import { validate } from "./lib/validate.js";
 import { buildReceiptObject, buildOutcomeObject, linesToArray, parseFormNumber, parseEvidenceRows } from "./lib/form-mapping.js";
 import { renderReceiptMarkdown, renderOutcomeMarkdown } from "../renderer/render.js";
+import { checkNumberInputs } from "./lib/number-input.js";
+import { checkTextInputs } from "./lib/text-input.js";
+
+// Every string in a built record, labelled by its JSON path.
+function recordStrings(value, path = "$", out = []) {
+  if (typeof value === "string") out.push({ label: path, text: value });
+  else if (Array.isArray(value)) value.forEach((v, i) => recordStrings(v, `${path}[${i}]`, out));
+  else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) recordStrings(v, `${path}.${k}`, out);
+  return out;
+}
+const TEXT_HEADING = "This text cannot be fingerprinted by Basisline Integrity:";
 
 // --- tab switching ---
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -39,27 +50,47 @@ function addEvidenceRow() {
 document.getElementById("add-evidence-row").addEventListener("click", addEvidenceRow);
 addEvidenceRow(); // start with one row
 
-function collectEvidence() {
-  return parseEvidenceRows(Array.from(evidenceRowsEl.querySelectorAll(".evidence-row"))
+function rawEvidenceRows() {
+  return Array.from(evidenceRowsEl.querySelectorAll(".evidence-row"))
     .map((row) => ({
       source: row.querySelector(".ev-source").value,
       metric: row.querySelector(".ev-metric").value,
       value: row.querySelector(".ev-value").value,
       unit: row.querySelector(".ev-unit").value,
       freshness_days: row.querySelector(".ev-freshness").value,
-    })));
+    }));
+}
+
+// Numeric inputs exactly as typed, labelled to match the evidence rows that
+// parseEvidenceRows keeps (rows with any non-blank field).
+function numericInputs(rows, reviewAfterDays) {
+  const kept = rows.filter((row) => Object.values(row).some((value) => value.trim() !== ""));
+  return [
+    ...kept.flatMap((row, i) => [
+      { label: `Evidence ${i + 1} value`, text: row.value },
+      { label: `Evidence ${i + 1} freshness (days)`, text: row.freshness_days, integer: true },
+    ]),
+    { label: "Review after (days)", text: reviewAfterDays, integer: true },
+  ];
 }
 
 // --- generic helpers ---
-function showErrors(el, errors) {
+function showErrors(el, errors, heading = "This record does not satisfy the Basisline v0.1 schema:") {
   if (errors.length === 0) {
     el.hidden = true;
     el.innerHTML = "";
     return;
   }
   el.hidden = false;
-  el.innerHTML = `<strong>This record does not satisfy the Basisline v0.1 schema:</strong><ul>${errors
+  el.innerHTML = `<strong>${escapeHtml(heading)}</strong><ul>${errors
     .map((e) => `<li>${escapeHtml(e)}</li>`)
+    .join("")}</ul>`;
+}
+
+function showWarnings(el, warnings) {
+  el.hidden = warnings.length === 0;
+  el.innerHTML = warnings.length === 0 ? "" : `<strong>Check these values before saving:</strong><ul>${warnings
+    .map((w) => `<li>${escapeHtml(w)}</li>`)
     .join("")}</ul>`;
 }
 
@@ -80,16 +111,27 @@ function download(filename, content, mime) {
 // --- Decision Receipt form ---
 const receiptForm = document.getElementById("receipt-form");
 const receiptErrorsEl = document.getElementById("receipt-errors");
+const receiptWarningsEl = document.getElementById("receipt-warnings");
 const receiptOutputEl = document.getElementById("receipt-output");
 let currentReceipt = null;
 let currentReceiptMd = "";
 
 receiptForm.addEventListener("submit", (e) => {
   e.preventDefault();
+  showWarnings(receiptWarningsEl, []);
 
   const evidenceAsOf = toIsoDateTime(document.getElementById("r-evidence_as_of").value);
   if (!evidenceAsOf) {
     showErrors(receiptErrorsEl, ["Evidence as of: select a valid browser-local date and time; nonexistent daylight-saving times are not accepted."]);
+    receiptOutputEl.hidden = true;
+    return;
+  }
+
+  const evidenceRows = rawEvidenceRows();
+  const reviewAfterDays = document.getElementById("r-review_after_days").value;
+  const numbers = checkNumberInputs(numericInputs(evidenceRows, reviewAfterDays));
+  if (numbers.errors.length) {
+    showErrors(receiptErrorsEl, numbers.errors, "These numbers cannot be stored exactly as entered:");
     receiptOutputEl.hidden = true;
     return;
   }
@@ -101,16 +143,22 @@ receiptForm.addEventListener("submit", (e) => {
     owner: document.getElementById("r-owner").value.trim(),
     date: document.getElementById("r-date").value,
     confidence: document.getElementById("r-confidence").value,
-    evidence: collectEvidence(),
+    evidence: parseEvidenceRows(evidenceRows),
     evidence_as_of: evidenceAsOf,
     assumptions: linesToArray(document.getElementById("r-assumptions").value),
     known_conflicts: linesToArray(document.getElementById("r-known_conflicts").value),
-    review_after_days: parseFormNumber(document.getElementById("r-review_after_days").value),
+    review_after_days: parseFormNumber(reviewAfterDays),
     supersedes: document.getElementById("r-supersedes").value.trim() || null,
     related_receipt_ids: linesToArray(document.getElementById("r-related").value),
   };
 
   const record = buildReceiptObject(fields);
+  const textErrors = checkTextInputs(recordStrings(record));
+  if (textErrors.length) {
+    showErrors(receiptErrorsEl, textErrors, TEXT_HEADING);
+    receiptOutputEl.hidden = true;
+    return;
+  }
   const result = validate(receiptSchema, record);
 
   showErrors(receiptErrorsEl, result.errors);
@@ -122,6 +170,7 @@ receiptForm.addEventListener("submit", (e) => {
 
   currentReceipt = record;
   currentReceiptMd = renderReceiptMarkdown(record);
+  showWarnings(receiptWarningsEl, numbers.warnings);
 
   document.getElementById("receipt-json-preview").textContent = JSON.stringify(record, null, 2);
   document.getElementById("receipt-md-preview").textContent = currentReceiptMd;
@@ -157,6 +206,12 @@ outcomeForm.addEventListener("submit", (e) => {
   };
 
   const record = buildOutcomeObject(fields);
+  const textErrors = checkTextInputs(recordStrings(record));
+  if (textErrors.length) {
+    showErrors(outcomeErrorsEl, textErrors, TEXT_HEADING);
+    outcomeOutputEl.hidden = true;
+    return;
+  }
   const result = validate(outcomeSchema, record);
 
   showErrors(outcomeErrorsEl, result.errors);

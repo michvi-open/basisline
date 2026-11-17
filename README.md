@@ -8,6 +8,8 @@ No account. No proprietary database. No vendor lock-in.
 
 **Preserve the basis of the decision.**
 
+Basisline is a standalone decision-record format and reference implementation for evidence documentation and deterministic integrity verification. Its specification and licences apply only to the materials expressly identified within this project; they do not establish rights to unrelated frameworks, methodologies or architectures.
+
 ---
 
 📄 **[Read the full v0.1 specification →](spec/v0.1.md)**

@@ -1,6 +1,6 @@
 {
   "name": "basisline",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Open specification for preserving the evidence, assumptions, and outcomes behind important business decisions.",
@@ -14,7 +14,7 @@
   "scripts": {
     "test": "npm run test:legacy && npm run test:integrity",
     "test:legacy": "python3 tests/validate_examples.py && node tests/test_renderer.mjs && node tests/test_reference_app.mjs && node tests/test_app_integration.mjs",
-    "test:integrity": "node --test tests/test_integrity_*.mjs tests/test_markdown_profile.mjs",
+    "test:integrity": "node --test tests/test_integrity_*.mjs tests/test_markdown_profile.mjs tests/test_number_input.mjs tests/test_text_input.mjs tests/test_reference_app_csp.mjs",
     "integrity": "node integrity/cli.js"
   }
 }
